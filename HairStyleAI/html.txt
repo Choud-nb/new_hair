@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智能发型测试室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans antialiased">
+    <div class="container mx-auto px-4 py-10 max-w-4xl">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
+                AI 智能发型测试
+            </h1>
+            <p class="text-gray-400 mt-2">上传照片，一键体验 2025 流行趋势</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- 左侧：上传与选择 -->
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                <h2 class="text-xl font-semibold mb-4">1. 上传您的照片</h2>
+                <div class="mb-6">
+                    <input type="file" id="fileInput" accept="image/*" class="block w-full text-sm text-gray-400
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-600 file:text-white
+                        hover:file:bg-blue-700 cursor-pointer"/>
+                    <p class="text-xs text-gray-500 mt-2">* 建议正脸清晰照片，不要遮挡额头</p>
+                </div>
+
+                <h2 class="text-xl font-semibold mb-4">2. 选择目标发型</h2>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <!-- 女生发型 -->
+                    <button onclick="selectHair('women_one_length', this)" class="hair-btn border border-gray-600 p-3 rounded-lg hover:bg-gray-700 text-left transition">
+                        👩 一刀切 (One-length)
+                    </button>
+                    <button onclick="selectHair('women_french_perm', this)" class="hair-btn border border-gray-600 p-3 rounded-lg hover:bg-gray-700 text-left transition">
+                        👩 法式烫 (French Perm)
+                    </button>
+                    <button onclick="selectHair('women_layered', this)" class="hair-btn border border-gray-600 p-3 rounded-lg hover:bg-gray-700 text-left transition">
+                        👩 层次锁骨发 (Layered)
+                    </button>
+                    
+                    <!-- 男生发型 -->
+                    <button onclick="selectHair('men_texture_crop', this)" class="hair-btn border border-gray-600 p-3 rounded-lg hover:bg-gray-700 text-left transition">
+                        👨 微分碎盖 (Texture)
+                    </button>
+                    <button onclick="selectHair('men_wolf_cut', this)" class="hair-btn border border-gray-600 p-3 rounded-lg hover:bg-gray-700 text-left transition">
+                        👨 狼尾 (Wolf Cut)
+                    </button>
+                </div>
+                <input type="hidden" id="selectedHairInput">
+
+                <button onclick="generate()" id="genBtn" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg transition transform hover:scale-105 flex justify-center items-center gap-2">
+                    <span>✨ 开始生成</span>
+                    <div class="loader" id="loader"></div>
+                </button>
+            </div>
+
+            <!-- 右侧：结果展示 -->
+            <div class="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700 flex flex-col items-center justify-center min-h-[400px]">
+                <h2 class="text-xl font-semibold mb-4 self-start">生成结果</h2>
+                <div id="resultArea" class="w-full h-full flex items-center justify-center bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 overflow-hidden relative">
+                    <p class="text-gray-500">生成的效果图将在这里显示</p>
+                    <img id="outputImage" class="hidden w-full h-auto object-cover" />
+                </div>
+                <a id="downloadLink" href="#" class="hidden mt-4 text-blue-400 hover:text-blue-300 underline">下载图片</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectHair(value, btn) {
+            document.getElementById('selectedHairInput').value = value;
+            // 重置样式
+            document.querySelectorAll('.hair-btn').forEach(b => {
+                b.classList.remove('bg-blue-600', 'border-blue-500');
+                b.classList.add('border-gray-600');
+            });
+            // 激活样式
+            btn.classList.remove('border-gray-600');
+            btn.classList.add('bg-blue-600', 'border-blue-500');
+        }
+
+        async function generate() {
+            const fileInput = document.getElementById('fileInput');
+            const hairStyle = document.getElementById('selectedHairInput').value;
+            const btn = document.getElementById('genBtn');
+            const loader = document.getElementById('loader');
+            const resultArea = document.getElementById('resultArea');
+            const outputImg = document.getElementById('outputImage');
+            const downloadLink = document.getElementById('downloadLink');
+
+            if (!fileInput.files[0]) return alert('请先上传照片！');
+            if (!hairStyle) return alert('请选择一个发型！');
+
+            // UI Loading 状态
+            btn.disabled = true;
+            btn.querySelector('span').textContent = 'AI 正在设计中...';
+            loader.style.display = 'block';
+            outputImg.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('hairstyle', hairStyle);
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    outputImg.src = data.image_url;
+                    outputImg.classList.remove('hidden');
+                    resultArea.querySelector('p').style.display = 'none';
+                    
+                    downloadLink.href = data.image_url;
+                    downloadLink.classList.remove('hidden');
+                } else {
+                    alert('生成失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert('网络请求错误');
+            } finally {
+                btn.disabled = false;
+                btn.querySelector('span').textContent = '✨ 再次生成';
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
